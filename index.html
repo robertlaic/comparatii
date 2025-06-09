@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparator Rețete Excel</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .upload-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .file-upload {
+            border: 3px dashed #3498db;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-upload:hover {
+            border-color: #2980b9;
+            background: #ecf0f1;
+            transform: translateY(-2px);
+        }
+
+        .file-upload.active {
+            border-color: #27ae60;
+            background: #d5f4e6;
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        .file-upload .icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            color: #3498db;
+        }
+
+        .file-upload h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .file-upload p {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+        }
+
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .summary {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-left: 5px solid #3498db;
+        }
+
+        .summary h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #3498db;
+            display: block;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .differences {
+            margin-top: 30px;
+        }
+
+        .category-section {
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .category-header {
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            color: white;
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .category-header:hover {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+        }
+
+        .category-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .category-content.open {
+            max-height: none;
+            overflow-y: auto;
+            max-height: 80vh;
+        }
+
+        .recipe-differences {
+            padding: 20px;
+        }
+
+        .recipe-item {
+            margin-bottom: 20px;
+            border: 1px solid #ecf0f1;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .recipe-header {
+            background: #f8f9fa;
+            padding: 15px;
+            font-weight: bold;
+            color: #2c3e50;
+            border-bottom: 1px solid #ecf0f1;
+            position: relative;
+        }
+
+        .recipe-header .btn-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .difference-type {
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .added {
+            background: #d5f4e6;
+            border-left: 4px solid #27ae60;
+            color: #27ae60;
+        }
+
+        .removed {
+            background: #fadbd8;
+            border-left: 4px solid #e74c3c;
+            color: #e74c3c;
+        }
+
+        .modified {
+            background: #fef9e7;
+            border-left: 4px solid #f39c12;
+            color: #d68910;
+        }
+
+        .material-details {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+
+        .recipe-details {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .complete-recipe {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .btn-toggle {
+            font-size: 0.8em;
+            transition: all 0.3s ease;
+        }
+
+        .btn-toggle:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .comparison-table tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .comparison-table tbody tr:hover {
+            background-color: #e3f2fd;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .comparison-table th {
+            background: #34495e;
+            color: white;
+            font-weight: 600;
+        }
+
+        .old-value {
+            color: #e74c3c;
+            text-decoration: line-through;
+        }
+
+        .new-value {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fadbd8;
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #f5b7b1;
+        }
+
+        .success {
+            background: #d5f4e6;
+            color: #27ae60;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #abebc6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Comparator Profesional Rețete</h1>
+            <p>Analizează și compară fișierele Excel cu rețete pentru a identifica diferențele</p>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-section">
+                <div class="file-upload" onclick="document.getElementById('file1').click()">
+                    <div class="icon">📁</div>
+                    <h3>Fișier Original</h3>
+                    <p>Selectează primul fișier Excel (.xlsx)</p>
+                    <input type="file" id="file1" accept=".xlsx" onchange="handleFileUpload(1, this)">
+                    <div id="file1-name" style="margin-top: 10px; font-weight: bold; color: #27ae60;"></div>
+                </div>
+
+                <div class="file-upload" onclick="document.getElementById('file2').click()">
+                    <div class="icon">📁</div>
+                    <h3>Fișier de Comparat</h3>
+                    <p>Selectează al doilea fișier Excel (.xlsx)</p>
+                    <input type="file" id="file2" accept=".xlsx" onchange="handleFileUpload(2, this)">
+                    <div id="file2-name" style="margin-top: 10px; font-weight: bold; color: #27ae60;"></div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-primary" onclick="compareFiles()" id="compareBtn" disabled>
+                    🔍 Compară Fișierele
+                </button>
+                <button class="btn btn-export" onclick="exportResults()" id="exportBtn" disabled>
+                    📊 Exportă Rezultatele
+                </button>
+                <button class="btn" onclick="expandAllCategories()" id="expandAllBtn" disabled 
+                        style="background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white;">
+                    📂 Extinde Toate
+                </button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Se procesează fișierele... Vă rugăm să așteptați.</p>
+            </div>
+
+            <div id="results" class="results"></div>
+        </div>
+    </div>
+
+    <script>
+        let file1Data = null;
+        let file2Data = null;
+        let comparisonResults = null;
+        let allCategoriesExpanded = false;
+
+        function handleFileUpload(fileNumber, input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            document.getElementById(`file${fileNumber}-name`).textContent = file.name;
+            document.querySelector(`#file${fileNumber}`).closest('.file-upload').classList.add('active');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const workbook = XLSX.read(e.target.result, {type: 'binary'});
+                    if (fileNumber === 1) {
+                        file1Data = workbook;
+                    } else {
+                        file2Data = workbook;
+                    }
+                    
+                    checkFilesReady();
+                } catch (error) {
+                    showError(`Eroare la citirea fișierului ${fileNumber}: ${error.message}`);
+                }
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        function checkFilesReady() {
+            const compareBtn = document.getElementById('compareBtn');
+            if (file1Data && file2Data) {
+                compareBtn.disabled = false;
+                compareBtn.style.background = 'linear-gradient(135deg, #3498db, #2980b9)';
+            }
+        }
+
+        function compareFiles() {
+            if (!file1Data || !file2Data) {
+                showError('Vă rugăm să încărcați ambele fișiere.');
+                return;
+            }
+
+            showLoading();
+            
+            setTimeout(() => {
+                try {
+                    const results = performComparison(file1Data, file2Data);
+                    comparisonResults = results;
+                    displayResults(results);
+                    document.getElementById('exportBtn').disabled = false;
+                    document.getElementById('expandAllBtn').disabled = false;
+                } catch (error) {
+                    showError(`Eroare la compararea fișierelor: ${error.message}`);
+                } finally {
+                    hideLoading();
+                }
+            }, 500);
+        }
+
+        function performComparison(wb1, wb2) {
+            const recipes1 = extractRecipes(wb1);
+            const recipes2 = extractRecipes(wb2);
+            
+            const results = {
+                file1Name: document.getElementById('file1-name').textContent,
+                file2Name: document.getElementById('file2-name').textContent,
+                totalRecipes1: Object.keys(recipes1).length,
+                totalRecipes2: Object.keys(recipes2).length,
+                addedRecipes: [],
+                removedRecipes: [],
+                modifiedRecipes: [],
+                renamedRecipes: [],
+                categoriesComparison: {}
+            };
+
+            // Creăm o mapă pentru a detecta rețetele redenumite
+            // Comparăm pe baza conținutului (materialelor) nu doar pe nume
+            const recipes1Array = Object.entries(recipes1);
+            const recipes2Array = Object.entries(recipes2);
+            const processedRecipes2 = new Set();
+            const processedRecipes1 = new Set();
+
+            // Primul pas: găsim matchuri exacte (același nume)
+            for (const [name1, recipe1] of recipes1Array) {
+                if (recipes2[name1]) {
+                    const comparison = compareRecipe(recipe1, recipes2[name1]);
+                    if (comparison.hasChanges) {
+                        results.modifiedRecipes.push({
+                            name: name1,
+                            category: recipe1.category,
+                            changes: comparison
+                        });
+                    }
+                    processedRecipes1.add(name1);
+                    processedRecipes2.add(name1);
+                }
+            }
+
+            // Al doilea pas: pentru rețetele rămase, încercăm să găsim matchuri pe conținut
+            const remainingRecipes1 = recipes1Array.filter(([name]) => !processedRecipes1.has(name));
+            const remainingRecipes2 = recipes2Array.filter(([name]) => !processedRecipes2.has(name));
+
+            for (const [name1, recipe1] of remainingRecipes1) {
+                let bestMatch = null;
+                let bestSimilarity = 0;
+
+                for (const [name2, recipe2] of remainingRecipes2) {
+                    if (processedRecipes2.has(name2)) continue;
+
+                    const similarity = calculateRecipeSimilarity(recipe1, recipe2);
+                    if (similarity > bestSimilarity && similarity > 0.8) { // 80% similaritate
+                        bestMatch = { name: name2, recipe: recipe2, similarity };
+                        bestSimilarity = similarity;
+                    }
+                }
+
+                if (bestMatch) {
+                    // Rețetă redenumită sau ușor modificată
+                    const comparison = compareRecipe(recipe1, bestMatch.recipe);
+                    if (name1 !== bestMatch.name) {
+                        results.renamedRecipes.push({
+                            oldName: name1,
+                            newName: bestMatch.name,
+                            category: recipe1.category,
+                            similarity: bestMatch.similarity,
+                            changes: comparison.hasChanges ? comparison : null
+                        });
+                    } else if (comparison.hasChanges) {
+                        results.modifiedRecipes.push({
+                            name: name1,
+                            category: recipe1.category,
+                            changes: comparison
+                        });
+                    }
+                    processedRecipes1.add(name1);
+                    processedRecipes2.add(bestMatch.name);
+                } else {
+                    // Rețetă eliminată
+                    results.removedRecipes.push({
+                        name: name1,
+                        category: recipe1.category,
+                        materialsCount: recipe1.materials.length,
+                        fullDetails: recipe1
+                    });
+                    processedRecipes1.add(name1);
+                }
+            }
+
+            // Rețetele care au rămas în recipes2 sunt adăugate
+            for (const [name2, recipe2] of remainingRecipes2) {
+                if (!processedRecipes2.has(name2)) {
+                    results.addedRecipes.push({
+                        name: name2,
+                        category: recipe2.category,
+                        materialsCount: recipe2.materials.length,
+                        fullDetails: recipe2
+                    });
+                }
+            }
+
+            // Grupează pe categorii
+            const categories1 = groupByCategory(recipes1);
+            const categories2 = groupByCategory(recipes2);
+            
+            for (const category of new Set([...Object.keys(categories1), ...Object.keys(categories2)])) {
+                results.categoriesComparison[category] = {
+                    recipesCount1: categories1[category] ? categories1[category].length : 0,
+                    recipesCount2: categories2[category] ? categories2[category].length : 0,
+                    addedRecipes: results.addedRecipes.filter(r => r.category === category),
+                    removedRecipes: results.removedRecipes.filter(r => r.category === category),
+                    modifiedRecipes: results.modifiedRecipes.filter(r => r.category === category),
+                    renamedRecipes: results.renamedRecipes.filter(r => r.category === category)
+                };
+            }
+
+            return results;
+        }
+
+        function calculateRecipeSimilarity(recipe1, recipe2) {
+            // Calculează similaritatea pe baza materialelor comune
+            const materials1 = new Set(recipe1.materials.map(m => m.denumire));
+            const materials2 = new Set(recipe2.materials.map(m => m.denumire));
+            
+            const intersection = new Set([...materials1].filter(x => materials2.has(x)));
+            const union = new Set([...materials1, ...materials2]);
+            
+            if (union.size === 0) return 0;
+            return intersection.size / union.size;
+        }
+
+        function extractRecipes(workbook) {
+            const recipes = {};
+            const sheetNames = workbook.SheetNames;
+            
+            // Extragem cuprinsul pentru a înțelege categoriile
+            const contentsSheet = workbook.Sheets['Cuprins'];
+            let currentCategory = 'Necategorizat';
+            
+            for (const sheetName of sheetNames) {
+                if (['Cuprins', 'Auxiliare'].includes(sheetName)) continue;
+                if (sheetName.includes('_') && sheetName.match(/_\d+_\d+$/)) {
+                    // Aceasta este o rețetă
+                    const sheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                    
+                    if (jsonData.length > 2) {
+                        // Extrage numele real al rețetei din rândul 1
+                        let recipeName = sheetName; // fallback la numele foii
+                        if (jsonData[1] && jsonData[1][0]) {
+                            const titleRow = jsonData[1][0];
+                            if (titleRow.includes('Materiale pentru rețeta:')) {
+                                recipeName = titleRow.replace('Materiale pentru rețeta:', '').trim();
+                            }
+                        }
+                        
+                        const materials = [];
+                        
+                        // Găsește categoria din linkurile de navigare
+                        const categoryLink = jsonData[0] && jsonData[0][1];
+                        if (categoryLink && categoryLink.includes('categoria ')) {
+                            currentCategory = categoryLink.replace('« Înapoi la categoria ', '').trim();
+                        }
+                        
+                        // Extrage materialele (începând de la rândul 3, rândul 2 sunt headerele)
+                        for (let i = 3; i < jsonData.length; i++) {
+                            const row = jsonData[i];
+                            if (row && row[0]) {
+                                materials.push({
+                                    denumire: row[0] || '',
+                                    cantitateReferinta: row[1] || 0,
+                                    coeficient: row[2] || 1,
+                                    formulaCalcul: row[3] || '',
+                                    cantitateFinala: row[4] || 0,
+                                    um: row[5] || '',
+                                    descriere: row[6] || ''
+                                });
+                            }
+                        }
+                        
+                        recipes[recipeName] = {
+                            category: currentCategory,
+                            materials: materials,
+                            sheetName: sheetName // păstrăm și numele foii pentru referință
+                        };
+                    }
+                } else {
+                    // Aceasta este o categorie
+                    currentCategory = sheetName;
+                }
+            }
+            
+            return recipes;
+        }
+
+        function compareRecipe(recipe1, recipe2) {
+            const comparison = {
+                hasChanges: false,
+                addedMaterials: [],
+                removedMaterials: [],
+                modifiedMaterials: [],
+                caseOnlyDifferences: []
+            };
+
+            const materials1Map = new Map(recipe1.materials.map(m => [m.denumire, m]));
+            const materials2Map = new Map(recipe2.materials.map(m => [m.denumire, m]));
+            
+            // Creăm și map-uri case-insensitive pentru detectarea diferențelor de majuscule/minuscule
+            const materials1MapLower = new Map(recipe1.materials.map(m => [m.denumire.toLowerCase(), m]));
+            const materials2MapLower = new Map(recipe2.materials.map(m => [m.denumire.toLowerCase(), m]));
+
+            // Găsește materialele adăugate și eliminate (considerând și diferențele de case)
+            for (const [denumire, material] of materials1Map) {
+                if (!materials2Map.has(denumire)) {
+                    // Verifică dacă există doar diferență de case
+                    const materialLowerCase = materials2MapLower.get(denumire.toLowerCase());
+                    if (materialLowerCase) {
+                        // Găsit material cu același nume dar case diferit
+                        const changes = compareMaterial(material, materialLowerCase);
+                        if (!changes.hasChanges) {
+                            // Doar diferența de case, fără alte modificări
+                            comparison.caseOnlyDifferences.push({
+                                oldName: denumire,
+                                newName: materialLowerCase.denumire,
+                                material: material
+                            });
+                            comparison.hasChanges = true;
+                        } else {
+                            // Diferență de case + alte modificări
+                            comparison.modifiedMaterials.push({
+                                denumire: denumire,
+                                newDenumire: materialLowerCase.denumire,
+                                changes: changes,
+                                hasCaseChange: true
+                            });
+                            comparison.hasChanges = true;
+                        }
+                    } else {
+                        // Material complet eliminat
+                        comparison.removedMaterials.push(material);
+                        comparison.hasChanges = true;
+                    }
+                }
+            }
+
+            for (const [denumire, material] of materials2Map) {
+                if (!materials1Map.has(denumire)) {
+                    // Verifică dacă nu este doar o diferență de case deja procesată
+                    const materialLowerCase = materials1MapLower.get(denumire.toLowerCase());
+                    if (!materialLowerCase) {
+                        // Material complet nou adăugat
+                        comparison.addedMaterials.push(material);
+                        comparison.hasChanges = true;
+                    }
+                }
+            }
+
+            // Găsește materialele modificate (cu același nume exact)
+            for (const [denumire, material1] of materials1Map) {
+                const material2 = materials2Map.get(denumire);
+                if (material2) {
+                    const changes = compareMaterial(material1, material2);
+                    if (changes.hasChanges) {
+                        comparison.modifiedMaterials.push({
+                            denumire: denumire,
+                            changes: changes
+                        });
+                        comparison.hasChanges = true;
+                    }
+                }
+            }
+
+            return comparison;
+        }
+
+        function compareMaterial(mat1, mat2) {
+            const changes = { hasChanges: false, differences: [] };
+            
+            const fields = ['cantitateReferinta', 'coeficient', 'formulaCalcul', 'cantitateFinala', 'um', 'descriere'];
+            
+            for (const field of fields) {
+                if (mat1[field] !== mat2[field]) {
+                    changes.differences.push({
+                        field: field,
+                        oldValue: mat1[field],
+                        newValue: mat2[field]
+                    });
+                    changes.hasChanges = true;
+                }
+            }
+            
+            return changes;
+        }
+
+        function groupByCategory(recipes) {
+            const grouped = {};
+            for (const [name, recipe] of Object.entries(recipes)) {
+                if (!grouped[recipe.category]) {
+                    grouped[recipe.category] = [];
+                }
+                grouped[recipe.category].push(name);
+            }
+            return grouped;
+        }
+
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('results');
+            
+            const html = `
+                <div class="summary">
+                    <h3>📊 Sumar Comparare</h3>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-value">${results.totalRecipes1}</span>
+                            <div class="stat-label">Rețete în ${results.file1Name}</div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">${results.totalRecipes2}</span>
+                            <div class="stat-label">Rețete în ${results.file2Name}</div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" style="color: #27ae60;">${results.addedRecipes.length}</span>
+                            <div class="stat-label">Rețete Adăugate</div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" style="color: #e74c3c;">${results.removedRecipes.length}</span>
+                            <div class="stat-label">Rețete Eliminate</div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" style="color: #f39c12;">${results.modifiedRecipes.length}</span>
+                            <div class="stat-label">Rețete Modificate</div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" style="color: #9b59b6;">${results.renamedRecipes ? results.renamedRecipes.length : 0}</span>
+                            <div class="stat-label">Rețete Redenumite</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="differences">
+                    <h3>🔍 Diferențe Detaliate</h3>
+                    ${generateCategoriesHTML(results)}
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function generateCategoriesHTML(results) {
+            let html = '';
+            
+            for (const [category, data] of Object.entries(results.categoriesComparison)) {
+                const totalChanges = data.addedRecipes.length + data.removedRecipes.length + 
+                                   data.modifiedRecipes.length + (data.renamedRecipes ? data.renamedRecipes.length : 0);
+                if (totalChanges === 0) continue;
+                
+                html += `
+                    <div class="category-section">
+                        <div class="category-header" onclick="toggleCategory('${category}')">
+                            <span>📁 ${category} (${totalChanges} modificări)</span>
+                            <span id="arrow-${category}">▼</span>
+                        </div>
+                        <div class="category-content" id="content-${category}">
+                            <div class="recipe-differences">
+                                ${generateRecipeDifferencesHTML(data)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            return html;
+        }
+
+        function generateRecipeDifferencesHTML(categoryData) {
+            let html = '';
+            
+            // Rețete adăugate
+            if (categoryData.addedRecipes.length > 0) {
+                html += '<h4 style="color: #27ae60; margin-bottom: 15px;">✅ Rețete Adăugate</h4>';
+                categoryData.addedRecipes.forEach(recipe => {
+                    html += `
+                        <div class="recipe-item">
+                            <div class="recipe-header">
+                                📝 ${recipe.name}
+                                <span style="color: #7f8c8d; font-size: 0.9em; font-weight: normal;">(${recipe.materialsCount} materiale)</span>
+                                <button class="btn-toggle" onclick="toggleRecipeDetails('added-${recipe.name.replace(/[^a-zA-Z0-9]/g, '')}')" style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">
+                                    Afișează Detalii
+                                </button>
+                            </div>
+                            <div class="difference-type added">
+                                ➕ Rețetă nouă adăugată cu ${recipe.materialsCount} materiale
+                            </div>
+                            <div id="added-${recipe.name.replace(/[^a-zA-Z0-9]/g, '')}" class="recipe-details" style="display: none;">
+                                ${generateCompleteRecipeHTML(recipe)}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            // Rețete eliminate
+            if (categoryData.removedRecipes.length > 0) {
+                html += '<h4 style="color: #e74c3c; margin-bottom: 15px;">❌ Rețete Eliminate</h4>';
+                categoryData.removedRecipes.forEach(recipe => {
+                    html += `
+                        <div class="recipe-item">
+                            <div class="recipe-header">
+                                📝 ${recipe.name}
+                                <span style="color: #7f8c8d; font-size: 0.9em; font-weight: normal;">(${recipe.materialsCount} materiale)</span>
+                                <button class="btn-toggle" onclick="toggleRecipeDetails('removed-${recipe.name.replace(/[^a-zA-Z0-9]/g, '')}')" style="background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">
+                                    Afișează Detalii
+                                </button>
+                            </div>
+                            <div class="difference-type removed">
+                                ➖ Rețetă eliminată (avea ${recipe.materialsCount} materiale)
+                            </div>
+                            <div id="removed-${recipe.name.replace(/[^a-zA-Z0-9]/g, '')}" class="recipe-details" style="display: none;">
+                                ${generateCompleteRecipeHTML(recipe)}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            // Rețete redenumite
+            if (categoryData.renamedRecipes && categoryData.renamedRecipes.length > 0) {
+                html += '<h4 style="color: #9b59b6; margin-bottom: 15px;">🔄 Rețete Redenumite</h4>';
+                categoryData.renamedRecipes.forEach(recipe => {
+                    html += `
+                        <div class="recipe-item">
+                            <div class="recipe-header">
+                                📝 ${recipe.oldName} ➜ ${recipe.newName}
+                                <button class="btn-toggle" onclick="toggleRecipeDetails('renamed-${recipe.newName.replace(/[^a-zA-Z0-9]/g, '')}')" style="background: #9b59b6; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">
+                                    Afișează Detalii
+                                </button>
+                            </div>
+                            <div class="difference-type" style="background: #f4f1ff; border-left: 4px solid #9b59b6; color: #8e44ad;">
+                                🔄 Rețetă redenumită (similaritate: ${Math.round(recipe.similarity * 100)}%)
+                            </div>
+                            <div id="renamed-${recipe.newName.replace(/[^a-zA-Z0-9]/g, '')}" class="recipe-details" style="display: none;">
+                                ${recipe.changes ? generateModificationDetailsHTML(recipe.changes) : '<p>Nu au fost detectate modificări în conținut.</p>'}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            // Rețete modificate
+            if (categoryData.modifiedRecipes.length > 0) {
+                html += '<h4 style="color: #f39c12; margin-bottom: 15px;">🔧 Rețete Modificate</h4>';
+                categoryData.modifiedRecipes.forEach(recipe => {
+                    html += `
+                        <div class="recipe-item">
+                            <div class="recipe-header">
+                                📝 ${recipe.name}
+                                <span style="color: #7f8c8d; font-size: 0.9em; font-weight: normal;">
+                                    (${recipe.changes.addedMaterials.length + recipe.changes.removedMaterials.length + recipe.changes.modifiedMaterials.length} modificări)
+                                </span>
+                                <button class="btn-toggle" onclick="toggleRecipeDetails('modified-${recipe.name.replace(/[^a-zA-Z0-9]/g, '')}')" style="background: #f39c12; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">
+                                    Afișează Modificări
+                                </button>
+                            </div>
+                            <div class="difference-type modified">
+                                🔧 Rețetă cu modificări în materiale
+                            </div>
+                            <div id="modified-${recipe.name.replace(/[^a-zA-Z0-9]/g, '')}" class="recipe-details" style="display: none;">
+                                ${generateModificationDetailsHTML(recipe.changes)}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            return html;
+        }
+
+        function generateCompleteRecipeHTML(recipe) {
+            if (!recipe.fullDetails || !recipe.fullDetails.materials) {
+                return '<p style="color: #7f8c8d; font-style: italic;">Detaliile complete ale rețetei nu sunt disponibile.</p>';
+            }
+
+            let html = `
+                <div class="complete-recipe">
+                    <h5 style="color: #2c3e50; margin-bottom: 15px;">📋 Lista Completă de Materiale</h5>
+                    <table class="comparison-table" style="width: 100%; font-size: 0.85em;">
+                        <thead>
+                            <tr>
+                                <th>Denumire Material</th>
+                                <th>Cant. Ref.</th>
+                                <th>Coef.</th>
+                                <th>Cant. Finală</th>
+                                <th>UM</th>
+                                <th>Descriere</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            recipe.fullDetails.materials.forEach(material => {
+                html += `
+                    <tr>
+                        <td><strong>${material.denumire}</strong></td>
+                        <td style="text-align: right;">${material.cantitateReferinta}</td>
+                        <td style="text-align: center;">${material.coeficient}</td>
+                        <td style="text-align: right; color: #27ae60; font-weight: bold;">${material.cantitateFinala}</td>
+                        <td style="text-align: center;">${material.um}</td>
+                        <td style="font-size: 0.8em; color: #7f8c8d;">${material.descriere}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-size: 0.85em; color: #7f8c8d;">
+                        <strong>Total materiale:</strong> ${recipe.fullDetails.materials.length} | 
+                        <strong>Categorie:</strong> ${recipe.category}
+                    </div>
+                </div>
+            `;
+
+            return html;
+        }
+
+        function toggleRecipeDetails(detailsId) {
+            const detailsDiv = document.getElementById(detailsId);
+            const button = event.target;
+            
+            if (detailsDiv.style.display === 'none') {
+                detailsDiv.style.display = 'block';
+                button.textContent = 'Ascunde Detalii';
+                button.style.background = '#7f8c8d';
+            } else {
+                detailsDiv.style.display = 'none';
+                if (detailsId.startsWith('added-')) {
+                    button.textContent = 'Afișează Detalii';
+                    button.style.background = '#27ae60';
+                } else if (detailsId.startsWith('removed-')) {
+                    button.textContent = 'Afișează Detalii';
+                    button.style.background = '#e74c3c';
+                } else if (detailsId.startsWith('renamed-')) {
+                    button.textContent = 'Afișează Detalii';
+                    button.style.background = '#9b59b6';
+                } else {
+                    button.textContent = 'Afișează Modificări';
+                    button.style.background = '#f39c12';
+                }
+            }
+        }
+
+        function generateModificationDetailsHTML(changes) {
+            let html = '';
+            
+            // Diferențe doar de majuscule/minuscule
+            if (changes.caseOnlyDifferences && changes.caseOnlyDifferences.length > 0) {
+                html += '<div class="difference-type" style="background: #e8f4f8; border-left: 4px solid #3498db; color: #2980b9;">ℹ️ Diferențe doar de Majuscule/Minuscule:</div>';
+                html += '<table class="comparison-table" style="margin-bottom: 15px;"><thead><tr><th>Material Vechi</th><th>Material Nou</th><th>Cant. Ref.</th><th>Cant. Finală</th><th>UM</th></tr></thead><tbody>';
+                changes.caseOnlyDifferences.forEach(diff => {
+                    html += `
+                        <tr style="background-color: #e8f4f8;">
+                            <td style="text-decoration: line-through; color: #7f8c8d;"><strong>${diff.oldName}</strong></td>
+                            <td style="color: #2980b9; font-weight: bold;"><strong>${diff.newName}</strong></td>
+                            <td style="text-align: right;">${diff.material.cantitateReferinta}</td>
+                            <td style="text-align: right; font-weight: bold;">${diff.material.cantitateFinala}</td>
+                            <td style="text-align: center;">${diff.material.um}</td>
+                        </tr>
+                    `;
+                });
+                html += '</tbody></table>';
+                html += '<p style="font-size: 0.85em; color: #7f8c8d; font-style: italic; margin-bottom: 15px;">📝 Observație: Aceste materiale au același conținut, doar denumirea diferă prin majuscule/minuscule.</p>';
+            }
+            
+            if (changes.addedMaterials.length > 0) {
+                html += '<div class="difference-type added">➕ Materiale Adăugate:</div>';
+                html += '<table class="comparison-table" style="margin-bottom: 15px;"><thead><tr><th>Material</th><th>Cant. Ref.</th><th>Coef.</th><th>Cant. Finală</th><th>UM</th><th>Descriere</th></tr></thead><tbody>';
+                changes.addedMaterials.forEach(material => {
+                    html += `
+                        <tr style="background-color: #d5f4e6;">
+                            <td><strong>${material.denumire}</strong></td>
+                            <td style="text-align: right;">${material.cantitateReferinta}</td>
+                            <td style="text-align: center;">${material.coeficient}</td>
+                            <td style="text-align: right; font-weight: bold;">${material.cantitateFinala}</td>
+                            <td style="text-align: center;">${material.um}</td>
+                            <td style="font-size: 0.85em;">${material.descriere}</td>
+                        </tr>
+                    `;
+                });
+                html += '</tbody></table>';
+            }
+            
+            if (changes.removedMaterials.length > 0) {
+                html += '<div class="difference-type removed">➖ Materiale Eliminate:</div>';
+                html += '<table class="comparison-table" style="margin-bottom: 15px;"><thead><tr><th>Material</th><th>Cant. Ref.</th><th>Coef.</th><th>Cant. Finală</th><th>UM</th><th>Descriere</th></tr></thead><tbody>';
+                changes.removedMaterials.forEach(material => {
+                    html += `
+                        <tr style="background-color: #fadbd8;">
+                            <td><strong>${material.denumire}</strong></td>
+                            <td style="text-align: right;">${material.cantitateReferinta}</td>
+                            <td style="text-align: center;">${material.coeficient}</td>
+                            <td style="text-align: right; font-weight: bold;">${material.cantitateFinala}</td>
+                            <td style="text-align: center;">${material.um}</td>
+                            <td style="font-size: 0.85em;">${material.descriere}</td>
+                        </tr>
+                    `;
+                });
+                html += '</tbody></table>';
+            }
+            
+            if (changes.modifiedMaterials.length > 0) {
+                html += '<div class="difference-type modified">🔄 Materiale Modificate:</div>';
+                changes.modifiedMaterials.forEach(material => {
+                    const materialTitle = material.hasCaseChange ? 
+                        `📦 ${material.denumire} ➜ ${material.newDenumire} <span style="font-size: 0.8em; color: #3498db;">(+ diferență majuscule/minuscule)</span>` :
+                        `📦 ${material.denumire}`;
+                    
+                    html += `
+                        <div style="margin-bottom: 20px; padding: 15px; background: #fef9e7; border-radius: 8px; border-left: 4px solid #f39c12;">
+                            <h6 style="color: #d68910; margin-bottom: 10px; font-size: 1em;"><strong>${materialTitle}</strong></h6>
+                            <table class="comparison-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 30%;">Câmp Modificat</th>
+                                        <th style="width: 35%;">Valoare Veche</th>
+                                        <th style="width: 35%;">Valoare Nouă</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    
+                    material.changes.differences.forEach(diff => {
+                        const fieldNames = {
+                            'cantitateReferinta': 'Cantitate Referință',
+                            'coeficient': 'Coeficient',
+                            'formulaCalcul': 'Formula Calcul',
+                            'cantitateFinala': 'Cantitate Finală',
+                            'um': 'Unitate Măsură',
+                            'descriere': 'Descriere'
+                        };
+                        
+                        html += `
+                            <tr>
+                                <td><strong>${fieldNames[diff.field] || diff.field}</strong></td>
+                                <td class="old-value" style="background-color: #fadbd8; padding: 8px;">${diff.oldValue}</td>
+                                <td class="new-value" style="background-color: #d5f4e6; padding: 8px;">${diff.newValue}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                });
+            }
+            
+            return html;
+        }
+
+        function toggleCategory(category) {
+            const content = document.getElementById(`content-${category}`);
+            const arrow = document.getElementById(`arrow-${category}`);
+            
+            if (content.classList.contains('open')) {
+                content.classList.remove('open');
+                arrow.textContent = '▼';
+            } else {
+                content.classList.add('open');
+                arrow.textContent = '▲';
+                
+                // Scroll smooth către categoria deschisă
+                setTimeout(() => {
+                    content.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'nearest' 
+                    });
+                }, 300);
+            }
+        }
+
+        function expandAllCategories() {
+            const button = document.getElementById('expandAllBtn');
+            const allContents = document.querySelectorAll('[id^="content-"]');
+            const allArrows = document.querySelectorAll('[id^="arrow-"]');
+            
+            if (!allCategoriesExpanded) {
+                // Extinde toate
+                allContents.forEach(content => content.classList.add('open'));
+                allArrows.forEach(arrow => arrow.textContent = '▲');
+                button.textContent = '📁 Contractează Toate';
+                button.style.background = 'linear-gradient(135deg, #e74c3c, #c0392b)';
+                allCategoriesExpanded = true;
+            } else {
+                // Contractează toate
+                allContents.forEach(content => content.classList.remove('open'));
+                allArrows.forEach(arrow => arrow.textContent = '▼');
+                button.textContent = '📂 Extinde Toate';
+                button.style.background = 'linear-gradient(135deg, #8e44ad, #9b59b6)';
+                allCategoriesExpanded = false;
+            }
+        }
+
+        function exportResults() {
+            if (!comparisonResults) {
+                showError('Nu există rezultate pentru export. Vă rugăm să faceți mai întâi o comparare.');
+                return;
+            }
+
+            try {
+                // Creează un nou workbook pentru export
+                const wb = XLSX.utils.book_new();
+                
+                // Foaia de sumar
+                const summaryData = [
+                    ['Raport Comparare Rețete Excel'],
+                    ['Data generării:', new Date().toLocaleString('ro-RO')],
+                    [''],
+                    ['Fișier Original:', comparisonResults.file1Name],
+                    ['Fișier de Comparat:', comparisonResults.file2Name],
+                    [''],
+                    ['STATISTICI'],
+                    ['Total rețete fișier 1:', comparisonResults.totalRecipes1],
+                    ['Total rețete fișier 2:', comparisonResults.totalRecipes2],
+                    ['Rețete adăugate:', comparisonResults.addedRecipes.length],
+                    ['Rețete eliminate:', comparisonResults.removedRecipes.length],
+                    ['Rețete modificate:', comparisonResults.modifiedRecipes.length]
+                ];
+                
+                const summaryWS = XLSX.utils.aoa_to_sheet(summaryData);
+                XLSX.utils.book_append_sheet(wb, summaryWS, 'Sumar');
+                
+                // Foaia cu rețete adăugate
+                if (comparisonResults.addedRecipes.length > 0) {
+                    const addedData = [
+                        ['Rețete Adăugate'],
+                        ['Nume Rețetă', 'Categorie', 'Număr Materiale']
+                    ];
+                    
+                    comparisonResults.addedRecipes.forEach(recipe => {
+                        addedData.push([recipe.name, recipe.category, recipe.materialsCount]);
+                    });
+                    
+                    const addedWS = XLSX.utils.aoa_to_sheet(addedData);
+                    XLSX.utils.book_append_sheet(wb, addedWS, 'Rețete Adăugate');
+                }
+                
+                // Foaia cu rețete eliminate
+                if (comparisonResults.removedRecipes.length > 0) {
+                    const removedData = [
+                        ['Rețete Eliminate'],
+                        ['Nume Rețetă', 'Categorie', 'Număr Materiale']
+                    ];
+                    
+                    comparisonResults.removedRecipes.forEach(recipe => {
+                        removedData.push([recipe.name, recipe.category, recipe.materialsCount]);
+                    });
+                    
+                    const removedWS = XLSX.utils.aoa_to_sheet(removedData);
+                    XLSX.utils.book_append_sheet(wb, removedWS, 'Rețete Eliminate');
+                }
+                
+                // Foaia cu modificări detaliate
+                if (comparisonResults.modifiedRecipes.length > 0) {
+                    const modifiedData = [
+                        ['Modificări Detaliate'],
+                        ['Rețetă', 'Material', 'Tip Modificare', 'Câmp', 'Valoare Veche', 'Valoare Nouă']
+                    ];
+                    
+                    comparisonResults.modifiedRecipes.forEach(recipe => {
+                        const changes = recipe.changes;
+                        
+                        // Materiale adăugate
+                        changes.addedMaterials.forEach(material => {
+                            modifiedData.push([
+                                recipe.name,
+                                material.denumire,
+                                'Material Adăugat',
+                                'Nou material',
+                                '',
+                                `${material.cantitateReferinta} ${material.um}`
+                            ]);
+                        });
+                        
+                        // Materiale eliminate
+                        changes.removedMaterials.forEach(material => {
+                            modifiedData.push([
+                                recipe.name,
+                                material.denumire,
+                                'Material Eliminat',
+                                'Material șters',
+                                `${material.cantitateReferinta} ${material.um}`,
+                                ''
+                            ]);
+                        });
+                        
+                        // Materiale modificate
+                        changes.modifiedMaterials.forEach(material => {
+                            material.changes.differences.forEach(diff => {
+                                modifiedData.push([
+                                    recipe.name,
+                                    material.denumire,
+                                    'Material Modificat',
+                                    diff.field,
+                                    diff.oldValue,
+                                    diff.newValue
+                                ]);
+                            });
+                        });
+                    });
+                    
+                    const modifiedWS = XLSX.utils.aoa_to_sheet(modifiedData);
+                    XLSX.utils.book_append_sheet(wb, modifiedWS, 'Modificări Detaliate');
+                }
+                
+                // Salvează fișierul
+                const fileName = `Comparare_Retete_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                
+                showSuccess('Raportul a fost exportat cu succes!');
+                
+            } catch (error) {
+                showError(`Eroare la exportul rezultatelor: ${error.message}`);
+            }
+        }
+
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function showError(message) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `<div class="error">❌ ${message}</div>`;
+        }
+
+        function showSuccess(message) {
+            const resultsDiv = document.getElementById('results');
+            const currentContent = resultsDiv.innerHTML;
+            resultsDiv.innerHTML = `<div class="success">✅ ${message}</div>` + currentContent;
+            
+            // Elimină mesajul de succes după 5 secunde
+            setTimeout(() => {
+                const successDiv = resultsDiv.querySelector('.success');
+                if (successDiv) {
+                    successDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Funcții pentru drag & drop
+        ['file1', 'file2'].forEach(fileId => {
+            const uploadDiv = document.querySelector(`#${fileId}`).closest('.file-upload');
+            
+            uploadDiv.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadDiv.style.borderColor = '#27ae60';
+                uploadDiv.style.background = '#d5f4e6';
+            });
+            
+            uploadDiv.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                uploadDiv.style.borderColor = '#3498db';
+                uploadDiv.style.background = '#f8f9fa';
+            });
+            
+            uploadDiv.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadDiv.style.borderColor = '#3498db';
+                uploadDiv.style.background = '#f8f9fa';
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const fileInput = document.getElementById(fileId);
+                    fileInput.files = files;
+                    handleFileUpload(parseInt(fileId.slice(-1)), fileInput);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
